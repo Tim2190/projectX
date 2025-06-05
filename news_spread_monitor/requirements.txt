@@ -1,0 +1,12 @@
+requests
+beautifulsoup4
+fuzzywuzzy
+python-Levenshtein
+textblob
+tldextract
+streamlit
+pandas
+plotly
+folium
+streamlit-folium
+fpdf
