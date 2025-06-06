@@ -1,6 +1,7 @@
 import feedparser
-from typing import List, Dict, Optional
+import logging
 import datetime
+from typing import List, Dict, Optional
 from urllib.parse import quote_plus
 
 class ScraperSearch:
@@ -8,7 +9,11 @@ class ScraperSearch:
 
     def search(self, query: str, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict]:
         """Perform search via public RSS without API keys."""
-        safe_query = quote_plus(query.strip())  # Без кавычек!
+        if getattr(feed, "bozo", False):
+            logging.error("Feedparser error: %s", feed.get("bozo_exception"))
+            return []
+        words = query.lower().split()
+            if not all(w in text for w in words):
         url = (
             "https://news.google.com/rss/search?q="
             f"{safe_query}&hl=ru&gl=RU&ceid=RU:ru"

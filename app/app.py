@@ -1,13 +1,9 @@
-import sys
 import os
 import pandas as pd
 import datetime
 import streamlit as st
 from input_handler import InputHandler
 from search_engine import SearchEngine
-from exporter import Exporter
-
-sys.path.append(os.path.dirname(__file__))
 
 st.title('News Monitor')
 
@@ -24,7 +20,11 @@ if st.button('Искать') and query:
     se = SearchEngine(
         profile.get('gnews', '')
     )
-    results = se.search(engine_name, query, from_date, to_date)
+    try:
+        results = se.search(engine_name, query, from_date, to_date)
+    except Exception:
+        st.error('Ошибка запроса к поисковику. Попробуйте изменить ключевые слова.')
+        results = []
     df = pd.DataFrame(results)
 
     if language == 'Русский':
@@ -36,31 +36,14 @@ if st.button('Искать') and query:
         }
         df = df.rename(columns={k: v for k, v in translations.items() if k in df.columns})
 
-    st.dataframe(df)
-
-    exporter = Exporter()
-    csv_label = 'Путь для CSV' if language == 'Русский' else 'CSV path'
-    pdf_label = 'Путь для PDF' if language == 'Русский' else 'PDF path'
+    if df.empty:
+        st.info('Нет результатов. Попробуйте изменить ключевые слова.')
+    st.dataframe(df, use_container_width=True)
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')
-    csv_path = st.text_input(csv_label, f'results_{timestamp}.csv')
-    pdf_path = st.text_input(pdf_label, f'results_{timestamp}.pdf')
-
-    if st.button('Экспорт CSV'):
-        if df.empty:
-            st.warning('Нет данных для экспорта')
-        else:
-            try:
-                exporter.export_csv(df, csv_path)
-                st.success('CSV сохранен' if language == 'Русский' else 'CSV saved')
-            except Exception as e:
-                st.error(str(e))
-
-    if st.button('Экспорт PDF'):
-        if df.empty:
-            st.warning('Нет данных для экспорта')
-        else:
-            try:
-                exporter.export_pdf(df, pdf_path)
-                st.success('PDF сохранен' if language == 'Русский' else 'PDF saved')
-            except Exception as e:
-                st.error(str(e))
+    csv_name = f'results_{timestamp}.csv'
+    st.download_button(
+        label='Скачать CSV' if language == 'Русский' else 'Download CSV',
+        data=df.to_csv(index=False).encode('utf-8'),
+        file_name=csv_name,
+        mime='text/csv'
+    )

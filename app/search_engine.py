@@ -1,12 +1,41 @@
+import logging
+import re
 import requests
 from typing import List, Dict, Optional
 from scraper_search import ScraperSearch
 from urllib.parse import quote_plus
-from datetime import datetime
-import time
+    @staticmethod
+    def _clean_query(query: str) -> str:
+        """Remove quotes and special characters leaving words and spaces."""
+        words = re.findall(r"[\w\-]+", query, flags=re.UNICODE)
+        return " ".join(words)
 
-class SearchEngine:
-    def __init__(self, gnews_key: str = ''):
+        cleaned = self._clean_query(query)
+            'q': quote_plus(cleaned),
+        try:
+            response = requests.get('https://gnews.io/api/v4/search', params=params)
+            response.raise_for_status()
+            articles = response.json().get('articles', [])
+        except requests.exceptions.HTTPError as e:
+            logging.exception('GNews request failed')
+            raise e
+
+        words = cleaned.lower().split()
+        filtered = []
+        for art in articles:
+            text = f"{art.get('title','')} {art.get('description','')}".lower()
+            if all(w in text for w in words):
+                filtered.append(art)
+        return filtered
+        cleaned = self._clean_query(query)
+        results = scraper.search(cleaned, from_date, to_date)
+        words = cleaned.lower().split()
+        filtered = []
+        for item in results:
+            text = f"{item.get('title','')} {item.get('summary','')}".lower()
+            if all(w in text for w in words):
+                filtered.append(item)
+        return filtered
         self.gnews_key = gnews_key
 
     def search_gnews(self, query: str, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict]:
