@@ -1,6 +1,7 @@
 import sys
 import os
 import pandas as pd
+import datetime
 import streamlit as st
 from input_handler import InputHandler
 from search_engine import SearchEngine
@@ -42,11 +43,26 @@ if st.button('Искать') and query:
     exporter = Exporter()
     csv_label = 'Путь для CSV' if language == 'Русский' else 'CSV path'
     pdf_label = 'Путь для PDF' if language == 'Русский' else 'PDF path'
-    csv_path = st.text_input(csv_label, 'results.csv')
-    pdf_path = st.text_input(pdf_label, 'results.pdf')
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')
+    csv_path = st.text_input(csv_label, f'results_{timestamp}.csv')
+    pdf_path = st.text_input(pdf_label, f'results_{timestamp}.pdf')
+
     if st.button('Экспорт CSV'):
-        exporter.export_csv(df, csv_path)
-        st.success('CSV сохранен' if language == 'Русский' else 'CSV saved')
+        if df.empty:
+            st.warning('Нет данных для экспорта')
+        else:
+            try:
+                exporter.export_csv(df, csv_path)
+                st.success('CSV сохранен' if language == 'Русский' else 'CSV saved')
+            except Exception as e:
+                st.error(str(e))
+
     if st.button('Экспорт PDF'):
-        exporter.export_pdf(df, pdf_path)
-        st.success('PDF сохранен' if language == 'Русский' else 'PDF saved')
+        if df.empty:
+            st.warning('Нет данных для экспорта')
+        else:
+            try:
+                exporter.export_pdf(df, pdf_path)
+                st.success('PDF сохранен' if language == 'Русский' else 'PDF saved')
+            except Exception as e:
+                st.error(str(e))

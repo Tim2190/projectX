@@ -1,7 +1,9 @@
 streamlit
 pandas
+feedparser
+requests
 plotly
 fpdf
-feedparser
 streamlit-folium
 folium
+reportlab

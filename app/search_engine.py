@@ -51,10 +51,10 @@ class SearchEngine:
         response.raise_for_status()
         return response.json().get('value', [])
 
-    def search_scraper(self, query: str) -> List[Dict]:
+    def search_scraper(self, query: str, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict]:
         """Use fallback scraper search"""
         scraper = ScraperSearch()
-        return scraper.search(query)
+        return scraper.search(query, from_date, to_date)
 
     def search(self, engine: str, query: str, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict]:
         """General search dispatcher"""
@@ -65,5 +65,5 @@ class SearchEngine:
         if engine == "contextual":
             return self.search_contextual(query, from_date, to_date)
         if engine == "scraper":
-            return self.search_scraper(query)
+            return self.search_scraper(query, from_date, to_date)
         return []

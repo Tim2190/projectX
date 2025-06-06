@@ -3,4 +3,5 @@ __pycache__/
 *.pdf
 *.csv
 *.ttf
+profiles/
 app/profiles/*.json

@@ -1,6 +1,7 @@
 # ProjectX
 
 Приложение на Streamlit для мониторинга новостей.
+В профилях можно сохранять API‑ключи для разных поисковиков.
 
 ## Возможности
 * Поиск новостей через SerpApi, GNews, ContextualWeb
@@ -9,6 +10,18 @@
 * Фильтрация по диапазону дат
 * Резервный поиск без ключей через Google News RSS
 * Интерфейс на русском или английском
+
+## Пример профиля
+
+```json
+{
+  "Рабочий": {
+    "serpapi": "YOUR_SERPAPI_KEY",
+    "gnews": "YOUR_GNEWS_KEY",
+    "contextualweb": "YOUR_CONTEXTUAL_KEY"
+  }
+}
+```
 
 ## Установка
 
@@ -23,3 +36,7 @@ pip install -r requirements.txt
 ```bash
 streamlit run app/app.py
 ```
+
+## Лицензия
+
+Проект распространяется под лицензией MIT. См. файл [LICENSE](LICENSE).
