@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Optional
 import streamlit as st
-from .profile_manager import ProfileManager
+from profile_manager import ProfileManager
 
 class InputHandler:
     def __init__(self):
@@ -41,7 +41,7 @@ class InputHandler:
             if st.button('Сохранить профиль'):
                 self.pm.add_profile(name, keys)
                 st.success('Профиль сохранен')
-                st.experimental_rerun()
+                st.rerun()
             return {}
         else:
             return profiles.get(choice, {})
