@@ -22,9 +22,7 @@ from_date, to_date = handler.date_filters()
 
 if st.button('Искать') and query:
     se = SearchEngine(
-        profile.get('serpapi', ''),
-        profile.get('gnews', ''),
-        profile.get('contextualweb', ''),
+        profile.get('gnews', '')
     )
     results = se.search(engine_name, query, from_date, to_date)
     df = pd.DataFrame(results)

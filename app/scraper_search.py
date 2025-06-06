@@ -1,15 +1,17 @@
 import feedparser
 from typing import List, Dict, Optional
 import datetime
+from urllib.parse import quote_plus
 
 class ScraperSearch:
     """Fallback search engine using Google News RSS feeds."""
 
     def search(self, query: str, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict]:
         """Perform search via public RSS without API keys."""
+        safe_query = quote_plus(query)
         url = (
             "https://news.google.com/rss/search?q="
-            f"{query}&hl=ru&gl=RU&ceid=RU:ru"
+            f"{safe_query}&hl=ru&gl=RU&ceid=RU:ru"
         )
         feed = feedparser.parse(url)
         results = []
@@ -23,6 +25,9 @@ class ScraperSearch:
             if from_dt and pub_dt and pub_dt < from_dt:
                 continue
             if to_dt and pub_dt and pub_dt > to_dt:
+                continue
+            text = f"{getattr(entry, 'title', '')} {getattr(entry, 'summary', '')}".lower()
+            if query.lower() not in text:
                 continue
             results.append(
                 {

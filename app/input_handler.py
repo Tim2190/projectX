@@ -13,11 +13,9 @@ class InputHandler:
 
     def select_engine(self) -> str:
         """Choose search engine"""
-        engines = ['serpapi', 'gnews', 'contextual', 'scraper']
+        engines = ['gnews', 'scraper']
         labels = {
-            'serpapi': 'SerpApi',
             'gnews': 'GNews',
-            'contextual': 'ContextualWeb',
             'scraper': 'Scraper'
         }
         choice = st.sidebar.selectbox('Движок поиска', [labels[e] for e in engines])
@@ -30,13 +28,9 @@ class InputHandler:
             name = st.text_input('Имя профиля')
             keys = {}
             if engine != 'scraper':
-                serpapi = st.text_input('SerpApi ключ')
                 gnews = st.text_input('GNews ключ')
-                contextual = st.text_input('ContextualWeb ключ')
                 keys = {
-                    'serpapi': serpapi,
                     'gnews': gnews,
-                    'contextualweb': contextual,
                 }
             if st.button('Сохранить профиль'):
                 self.pm.add_profile(name, keys)

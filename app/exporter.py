@@ -12,7 +12,14 @@ class Exporter:
             st.warning('Font DejaVuSans.ttf not found in app/fonts/')
 
     def export_csv(self, df: pd.DataFrame, path: str):
-        df.to_csv(path, index=False)
+        if df.empty:
+            st.warning('Нет данных для экспорта')
+            return
+        try:
+            df.to_csv(path, index=False)
+            st.success(f'CSV сохранен: {path}')
+        except Exception as e:
+            st.error(str(e))
 
     def export_pdf(self, df: pd.DataFrame, path: str):
         if not self.font_available:

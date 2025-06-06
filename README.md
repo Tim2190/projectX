@@ -4,7 +4,7 @@
 В профилях можно сохранять API‑ключи для разных поисковиков.
 
 ## Возможности
-* Поиск новостей через SerpApi, GNews, ContextualWeb
+* Поиск новостей через GNews или Scraper без ключей
 * Экспорт результатов в CSV и PDF (поддержка Unicode благодаря шрифту DejaVuSans)
 * Система профилей для хранения API‑ключей
 * Фильтрация по диапазону дат
@@ -16,9 +16,7 @@
 ```json
 {
   "Рабочий": {
-    "serpapi": "YOUR_SERPAPI_KEY",
-    "gnews": "YOUR_GNEWS_KEY",
-    "contextualweb": "YOUR_CONTEXTUAL_KEY"
+    "gnews": "YOUR_GNEWS_KEY"
   }
 }
 ```
