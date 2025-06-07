@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import List, Dict, Optional
 from scraper_search import ScraperSearch
 from parser_engine import ParserEngine
+from transformers import pipeline
 
 
 class SearchEngine:
@@ -16,6 +17,20 @@ class SearchEngine:
     def __init__(self, sources: List[Dict]):
         self.sources = sources
         self.parser = ParserEngine()
+        try:
+            self.sentiment_pipe = pipeline('text-classification',
+                                           model='cointegrated/rubert-tiny2-cedr-emotion-detection')
+        except Exception:
+            self.sentiment_pipe = None
+
+    def _sentiment(self, text: str) -> str:
+        if not self.sentiment_pipe:
+            return 'neutral'
+        try:
+            res = self.sentiment_pipe(text[:512])[0]['label']
+            return res.lower()
+        except Exception:
+            return 'neutral'
 
     def search_scraper(self, query: str, from_date: Optional[str], to_date: Optional[str]) -> List[Dict]:
         cleaned = self._clean_query(query.strip())
@@ -59,6 +74,10 @@ class SearchEngine:
                 results_by_url[url] = item
 
         merged = list(results_by_url.values())
+
+        for item in merged:
+            text = f"{item.get('title','')} {item.get('description','')}"
+            item['sentiment'] = self._sentiment(text)
 
         def parse_date(item):
             try:

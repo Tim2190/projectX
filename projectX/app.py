@@ -6,6 +6,7 @@ from search_engine import SearchEngine
 from source_manager import SourceManager
 from event_clustering import cluster_events
 from streamlit_ui import show_analytics
+from report_utils import summarize_news
 
 st.title('News Monitor')
 
@@ -44,6 +45,7 @@ if st.button('Искать') and query:
     events = cluster_events(results)
     st.session_state['events'] = events
     show_analytics(events)
+    st.session_state.pop('report', None)
 
 if 'results' in st.session_state and st.checkbox('Показать таблицу'):
     df = pd.DataFrame(st.session_state['results'])
@@ -59,3 +61,9 @@ if 'results' in st.session_state and st.checkbox('Показать таблиц�
         file_name=csv_name,
         mime='text/csv',
     )
+
+if st.button('Развёрнутая аналитическая справка') and 'results' in st.session_state:
+    st.session_state['report'] = summarize_news(st.session_state['results'])
+
+if 'report' in st.session_state:
+    st.text_area('Справка', st.session_state['report'], height=300)
