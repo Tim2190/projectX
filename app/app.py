@@ -11,6 +11,7 @@ handler = InputHandler()
 language = handler.select_language()
 engine_name = handler.select_engine()
 profile = handler.select_profile(engine_name)
+handler.sources_widget(language)
 
 query_label = 'Запрос' if language == 'Русский' else 'Query'
 query = st.text_input(query_label)
