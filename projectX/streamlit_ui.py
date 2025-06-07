@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
 import plotly.express as px
+from collections import defaultdict
 
 
 def show_analytics(events):
@@ -41,16 +42,35 @@ def show_analytics(events):
         fig3 = px.pie(by_sent, names='sentiment', values='count', title='Тональность')
         st.plotly_chart(fig3, use_container_width=True)
 
-    st.subheader('События')
-    for ev in events:
+    def _render_event(ev, indent=False):
         src_line = ', '.join(ev.get('sources', []))
         header = f"{ev['title']} ({ev['count']} публикаций, {ev.get('sentiment','neutral')})"
-        with st.expander(header):
-            st.write(f"Источники: {src_line}")
-            for it in ev['items']:
-                line = (
-                    f"{it.get('published','')[:10]} "
-                    f"[{it.get('source','')}] {it.get('title','')} "
-                    f"({it.get('sentiment','neutral')})"
-                )
-                st.write(line)
+        if indent:
+            st.write('  - ' + header)
+            st.write('    ' + src_line)
+        else:
+            with st.expander(header):
+                st.write(f"Источники: {src_line}")
+                for it in ev['items']:
+                    line = (
+                        f"{it.get('published','')[:10]} "
+                        f"[{it.get('source','')}] {it.get('title','')} "
+                        f"({it.get('sentiment','neutral')})"
+                    )
+                    st.write(line)
+
+    st.subheader('События')
+    groups = defaultdict(list)
+    for ev in events:
+        groups[ev.get('parent_event_id', -1)].append(ev)
+
+    for pid, evs in groups.items():
+        if pid == -1 or len(evs) == 1:
+            for ev in evs:
+                _render_event(ev)
+        else:
+            total = sum(e['count'] for e in evs)
+            parent_title = evs[0]['title']
+            with st.expander(f"{parent_title} ({total} публикаций)"):
+                for ev in evs:
+                    _render_event(ev, indent=True)

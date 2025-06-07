@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, defaultdict
 from typing import List, Dict
 
 
@@ -22,6 +22,19 @@ def summarize_news(events: List[Dict]) -> str:
     if top_sources:
         src_line = ', '.join(f"{s[0]} ({s[1]})" for s in top_sources)
         lines.append('ТОП источники: ' + src_line)
+
+    # hierarchical listing
+    groups = defaultdict(list)
+    for e in events:
+        groups[e.get('parent_event_id', -1)].append(e)
+    for pid, evs in groups.items():
+        if pid == -1 or len(evs) == 1:
+            ev = evs[0]
+            lines.append(f"Событие: {ev['title']} ({ev['sentiment']})")
+        else:
+            lines.append(f"Событие: {evs[0]['title']}")
+            for sub in evs:
+                lines.append(f"  - {sub['title']} ({sub['sentiment']})")
 
     top_titles = sorted(events, key=lambda e: e['count'], reverse=True)[:3]
     if top_titles:

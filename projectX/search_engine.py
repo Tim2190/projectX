@@ -30,14 +30,24 @@ class SearchEngine:
             'открыли', 'установили', 'провели'
         ]
 
+    @staticmethod
+    def _preprocess_text(text: str) -> str:
+        clean = re.sub(r'["«»]', ' ', text)
+        clean = re.sub(r'\s+', ' ', clean)
+        return clean.strip()
+
     def _sentiment(self, text: str) -> str:
         if not self.sentiment_pipe:
             return 'neutral'
         try:
+            text = self._preprocess_text(text)
             res = self.sentiment_pipe(text[:512])[0]
             label = res['label'].lower()
             score = res['score']
             text_low = text.lower()
+            # mixed context handling
+            if any(n in text_low for n in self.negative_keywords) and any(p in text_low for p in self.positive_keywords):
+                return 'neutral'
             if label == 'neutral' and score < 0.6:
                 if any(k in text_low for k in self.negative_keywords):
                     return 'negative'

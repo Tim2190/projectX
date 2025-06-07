@@ -11,3 +11,5 @@ scikit-learn
 transformers
 sentence-transformers
 torch
+beautifulsoup4
+dateparser

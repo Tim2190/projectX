@@ -1,8 +1,43 @@
 import feedparser
 import logging
 import datetime
+import re
 from typing import List, Dict, Optional
 from urllib.parse import quote_plus
+import requests
+from bs4 import BeautifulSoup
+import dateparser
+
+
+def extract_pub_date(url: str) -> Optional[str]:
+    """Try to extract publication date from the article HTML page."""
+    try:
+        resp = requests.get(url, timeout=5)
+        if resp.status_code != 200:
+            return None
+    except Exception:
+        return None
+    soup = BeautifulSoup(resp.text, 'html.parser')
+    meta_props = [
+        ('meta', {'property': 'article:published_time'}),
+        ('meta', {'name': 'pubdate'}),
+        ('meta', {'name': 'publishdate'}),
+        ('meta', {'itemprop': 'datePublished'}),
+    ]
+    for tag_name, attrs in meta_props:
+        tag = soup.find(tag_name, attrs=attrs)
+        if tag and tag.get('content'):
+            dt = dateparser.parse(tag['content'])
+            if dt:
+                return dt.isoformat()
+    # look for generic date-like elements
+    date_tags = soup.find_all(class_=re.compile(r'(date|time|published)', re.I))
+    for tag in date_tags:
+        text = tag.get('datetime') or tag.get_text(' ', strip=True)
+        dt = dateparser.parse(text)
+        if dt:
+            return dt.isoformat()
+    return None
 
 class ScraperSearch:
     """Fallback search engine using Google News RSS feeds."""
@@ -37,6 +72,14 @@ class ScraperSearch:
                     pub_dt = datetime.date(*entry.published_parsed[:3])
                 except Exception:
                     pass
+            if not pub or (pub_dt and pub_dt.year < 2000) or (not pub_dt and pub and not dateparser.parse(pub)):
+                html_date = extract_pub_date(entry.link)
+                if html_date:
+                    pub = html_date
+                    try:
+                        pub_dt = dateparser.parse(html_date).date()
+                    except Exception:
+                        pub_dt = None
 
             if from_dt and pub_dt and pub_dt < from_dt:
                 continue
