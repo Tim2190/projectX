@@ -9,18 +9,20 @@ class ScraperSearch:
 
     def search(self, query: str, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict]:
         """Perform search via public RSS without API keys."""
-        if getattr(feed, "bozo", False):
-            logging.error("Feedparser error: %s", feed.get("bozo_exception"))
-            return []
-        words = query.lower().split()
-            if not all(w in text for w in words):
+        safe_query = quote_plus(query)
         url = (
             "https://news.google.com/rss/search?q="
             f"{safe_query}&hl=ru&gl=RU&ceid=RU:ru"
         )
 
         feed = feedparser.parse(url)
+
+        if getattr(feed, "bozo", False):
+            logging.error("Feedparser error: %s", feed.get("bozo_exception"))
+            return []
+
         results = []
+
         try:
             from_dt = datetime.date.fromisoformat(from_date) if from_date else None
             to_dt = datetime.date.fromisoformat(to_date) if to_date else None
@@ -54,4 +56,5 @@ class ScraperSearch:
                     "published": pub,
                 }
             )
+
         return results
