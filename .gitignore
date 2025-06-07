@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.pdf
+*.csv
+*.ttf
+profiles/
+app/profiles/*.json
