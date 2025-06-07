@@ -30,7 +30,7 @@ pip install -r requirements.txt
 ## Запуск
 
 ```bash
-streamlit run app/app.py
+streamlit run projectX/app.py
 ```
 
 ## Лицензия
