@@ -26,7 +26,8 @@ class SearchEngine:
             'скандал', 'коррупция', 'отставка', 'задержан'
         ]
         self.positive_keywords = [
-            'поздравил', 'открыл', 'премия', 'успех'
+            'поздравил', 'открыл', 'премия', 'успех',
+            'открыли', 'установили', 'провели'
         ]
 
     def _sentiment(self, text: str) -> str:
@@ -36,12 +37,16 @@ class SearchEngine:
             res = self.sentiment_pipe(text[:512])[0]
             label = res['label'].lower()
             score = res['score']
+            text_low = text.lower()
             if label == 'neutral' and score < 0.6:
-                text_low = text.lower()
                 if any(k in text_low for k in self.negative_keywords):
                     return 'negative'
                 if any(k in text_low for k in self.positive_keywords):
                     return 'positive'
+            if label == 'negative' and score < 0.6 and not any(k in text_low for k in self.negative_keywords):
+                return 'neutral'
+            if label == 'positive' and score < 0.6 and not any(k in text_low for k in self.positive_keywords):
+                return 'neutral'
             return label
         except Exception:
             return 'neutral'

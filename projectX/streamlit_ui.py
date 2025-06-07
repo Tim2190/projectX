@@ -43,8 +43,10 @@ def show_analytics(events):
 
     st.subheader('События')
     for ev in events:
-        header = f"{ev['title']} ({ev['count']}, {ev.get('sentiment','neutral')})"
+        src_line = ', '.join(ev.get('sources', []))
+        header = f"{ev['title']} ({ev['count']} публикаций, {ev.get('sentiment','neutral')})"
         with st.expander(header):
+            st.write(f"Источники: {src_line}")
             for it in ev['items']:
                 line = (
                     f"{it.get('published','')[:10]} "

@@ -25,8 +25,10 @@ if st.button('Искать') and query:
     st.session_state['results'] = results
     events = cluster_events(results)
     st.session_state['events'] = events
-    show_analytics(events)
     st.session_state.pop('report', None)
+
+if 'events' in st.session_state:
+    show_analytics(st.session_state['events'])
 
 if 'results' in st.session_state and st.checkbox('Показать таблицу'):
     df = pd.DataFrame(st.session_state['results'])
@@ -43,8 +45,8 @@ if 'results' in st.session_state and st.checkbox('Показать таблиц�
         mime='text/csv',
     )
 
-if st.button('Развёрнутая аналитическая справка') and 'results' in st.session_state:
-    st.session_state['report'] = summarize_news(st.session_state['results'])
+if st.button('Развёрнутая аналитическая справка') and 'events' in st.session_state:
+    st.session_state['report'] = summarize_news(st.session_state['events'])
 
 if 'report' in st.session_state:
     st.text_area('Справка', st.session_state['report'], height=300)
