@@ -2,7 +2,7 @@ import json
 import os
 from typing import Dict, Optional
 
-PROFILES_PATH = os.path.join(os.path.dirname(__file__), '..', 'profiles', 'profiles.json')
+PROFILES_PATH = os.path.join(os.path.dirname(__file__), 'profiles.json')
 
 class ProfileManager:
     def __init__(self):
