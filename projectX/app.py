@@ -36,20 +36,22 @@ if st.button('Искать') and query:
     except Exception:
         st.error('Ошибка при поиске. Измените запрос или источники.')
         results = []
+    st.session_state['results'] = results
     events = cluster_events(results)
+    st.session_state['events'] = events
     show_analytics(events, sources)
 
-    if st.checkbox('Показать таблицу'):
-        df = pd.DataFrame(results)
-        if language == 'Русский':
-            translations = {'title': 'Заголовок', 'url': 'Ссылка', 'published': 'Дата', 'description': 'Описание'}
-            df = df.rename(columns={k: v for k, v in translations.items() if k in df.columns})
-        st.dataframe(df, use_container_width=True)
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')
-        csv_name = f'results_{timestamp}.csv'
-        st.download_button(
-            label='Скачать CSV' if language == 'Русский' else 'Download CSV',
-            data=df.to_csv(index=False).encode('utf-8'),
-            file_name=csv_name,
-            mime='text/csv',
-        )
+if 'results' in st.session_state and st.checkbox('Показать таблицу'):
+    df = pd.DataFrame(st.session_state['results'])
+    if language == 'Русский':
+        translations = {'title': 'Заголовок', 'url': 'Ссылка', 'published': 'Дата', 'description': 'Описание'}
+        df = df.rename(columns={k: v for k, v in translations.items() if k in df.columns})
+    st.dataframe(df, use_container_width=True)
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')
+    csv_name = f'results_{timestamp}.csv'
+    st.download_button(
+        label='Скачать CSV' if language == 'Русский' else 'Download CSV',
+        data=df.to_csv(index=False).encode('utf-8'),
+        file_name=csv_name,
+        mime='text/csv',
+    )

@@ -25,7 +25,8 @@ class SearchEngine:
         filtered = []
         for item in raw_results:
             text = f"{item.get('title','')} {item.get('summary','')}".lower()
-            if any(w in text for w in words):
+            if all(w in text for w in words):
+                item['source'] = 'Scraper'
                 filtered.append(item)
         return filtered
 
@@ -35,7 +36,7 @@ class SearchEngine:
         for src in self.sources:
             for item in self.parser.parse(src):
                 text = f"{item.get('title','')} {item.get('description','')}".lower()
-                if any(w in text for w in words):
+                if all(w in text for w in words):
                     results.append(item)
         return results
 
