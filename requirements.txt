@@ -7,11 +7,7 @@ fpdf
 streamlit-folium
 folium
 reportlab
-beautifulsoup4
 scikit-learn
-telethon
-trafilatura
-openpyxl
 transformers
 sentence-transformers
 torch

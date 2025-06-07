@@ -35,7 +35,7 @@ class ScraperSearch:
             if getattr(entry, "published_parsed", None):
                 try:
                     pub_dt = datetime.date(*entry.published_parsed[:3])
-                except:
+                except Exception:
                     pass
 
             if from_dt and pub_dt and pub_dt < from_dt:
@@ -49,11 +49,22 @@ class ScraperSearch:
             if not all(word in text for word in query_words):
                 continue
 
+            title = getattr(entry, "title", "")
+            src_name = None
+            if getattr(entry, "source", None) and entry.source.get("title"):
+                src_name = entry.source["title"].strip()
+            if not src_name and " - " in title:
+                title, src_name = title.rsplit(" - ", 1)
+                title = title.strip()
+                src_name = src_name.strip()
+
             results.append(
                 {
-                    "title": entry.title,
+                    "title": title,
                     "url": entry.link,
                     "published": pub,
+                    "summary": getattr(entry, "summary", ""),
+                    "source": src_name or "Scraper",
                 }
             )
 
