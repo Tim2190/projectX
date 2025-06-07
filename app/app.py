@@ -17,9 +17,7 @@ query = st.text_input(query_label)
 from_date, to_date = handler.date_filters()
 
 if st.button('Искать') and query:
-    se = SearchEngine(
-        profile.get('gnews', '')
-    )
+    se = SearchEngine()
     try:
         results = se.search(engine_name, query, from_date, to_date)
     except Exception:

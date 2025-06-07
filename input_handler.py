@@ -13,10 +13,9 @@ class InputHandler:
 
     def select_engine(self) -> str:
         """Choose search engine"""
-        engines = ['serpapi', 'gnews', 'contextual', 'scraper']
+        engines = ['serpapi', 'contextual', 'scraper']
         labels = {
             'serpapi': 'SerpApi',
-            'gnews': 'GNews',
             'contextual': 'ContextualWeb',
             'scraper': 'Scraper'
         }
@@ -31,11 +30,9 @@ class InputHandler:
             keys = {}
             if engine != 'scraper':
                 serpapi = st.text_input('SerpApi ключ')
-                gnews = st.text_input('GNews ключ')
                 contextual = st.text_input('ContextualWeb ключ')
                 keys = {
                     'serpapi': serpapi,
-                    'gnews': gnews,
                     'contextualweb': contextual,
                 }
             if st.button('Сохранить профиль'):

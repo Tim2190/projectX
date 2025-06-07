@@ -3,9 +3,8 @@ from typing import List, Dict, Optional
 from scraper_search import ScraperSearch
 
 class SearchEngine:
-    def __init__(self, serpapi_key: str = '', gnews_key: str = '', contextual_key: str = ''):
+    def __init__(self, serpapi_key: str = '', contextual_key: str = ''):
         self.serpapi_key = serpapi_key
-        self.gnews_key = gnews_key
         self.contextual_key = contextual_key
 
     def search_serpapi(self, query: str, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict]:
@@ -23,18 +22,6 @@ class SearchEngine:
         response.raise_for_status()
         return response.json().get('news_results', [])
 
-    def search_gnews(self, query: str, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict]:
-        params = {
-            'q': query,
-            'token': self.gnews_key
-        }
-        if from_date:
-            params['from'] = from_date
-        if to_date:
-            params['to'] = to_date
-        response = requests.get('https://gnews.io/api/v4/search', params=params)
-        response.raise_for_status()
-        return response.json().get('articles', [])
 
     def search_contextual(self, query: str, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict]:
         headers = {
@@ -60,8 +47,6 @@ class SearchEngine:
         """General search dispatcher"""
         if engine == "serpapi":
             return self.search_serpapi(query, from_date, to_date)
-        if engine == "gnews":
-            return self.search_gnews(query, from_date, to_date)
         if engine == "contextual":
             return self.search_contextual(query, from_date, to_date)
         if engine == "scraper":
