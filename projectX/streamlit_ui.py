@@ -3,13 +3,12 @@ import streamlit as st
 import plotly.express as px
 
 
-def show_analytics(events, sources):
+def show_analytics(events):
     total_news = sum(e['count'] for e in events)
     st.subheader('Аналитика')
-    cols = st.columns(3)
+    cols = st.columns(2)
     cols[0].metric('Всего новостей', total_news)
-    cols[1].metric('Количество источников', len(sources))
-    cols[2].metric('Уникальных событий', len(events))
+    cols[1].metric('Уникальных событий', len(events))
 
     if not events:
         st.info('Нет данных для отображения')
@@ -33,3 +32,10 @@ def show_analytics(events, sources):
         by_source = df.groupby('source').size().reset_index(name='count')
         fig2 = px.pie(by_source, names='source', values='count', title='По источникам')
         st.plotly_chart(fig2, use_container_width=True)
+
+    st.subheader('События')
+    for ev in events:
+        with st.expander(f"{ev['title']} ({ev['count']})"):
+            for it in ev['items']:
+                line = f"{it.get('published','')[:10]} [{it.get('source','')}] {it.get('title','')}"
+                st.write(line)

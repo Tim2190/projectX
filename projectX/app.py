@@ -27,7 +27,11 @@ if st.sidebar.button('Добавить') and new_url:
 
 sources = sm.get_sources()
 if sources:
-    st.sidebar.write(pd.DataFrame(sources))
+    for idx, src in enumerate(sources):
+        cols = st.sidebar.columns(2)
+        cols[0].write(f"{src['url']} ({src['type']})")
+        if cols[1].button('Удалить', key=f'del_{idx}'):
+            sm.remove_source(idx)
 
 if st.button('Искать') and query:
     se = SearchEngine(sources)
@@ -39,7 +43,7 @@ if st.button('Искать') and query:
     st.session_state['results'] = results
     events = cluster_events(results)
     st.session_state['events'] = events
-    show_analytics(events, sources)
+    show_analytics(events)
 
 if 'results' in st.session_state and st.checkbox('Показать таблицу'):
     df = pd.DataFrame(st.session_state['results'])

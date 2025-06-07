@@ -43,13 +43,22 @@ class SearchEngine:
     def search(self, query: str, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict]:
         scraper_results = self.search_scraper(query, from_date, to_date)
         source_results = self.search_sources(query)
-        seen = set()
-        merged = []
-        for item in scraper_results + source_results:
-            key = (item.get('title','') + item.get('url','')).strip()
-            if key not in seen:
-                seen.add(key)
-                merged.append(item)
+
+        results_by_url = {}
+
+        # Add custom sources first
+        for item in source_results:
+            url = item.get('url')
+            if url:
+                results_by_url[url] = item
+
+        # Add scraper results only if url not already seen
+        for item in scraper_results:
+            url = item.get('url')
+            if url and url not in results_by_url:
+                results_by_url[url] = item
+
+        merged = list(results_by_url.values())
 
         def parse_date(item):
             try:

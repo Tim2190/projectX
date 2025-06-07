@@ -27,4 +27,4 @@ def cluster_events(items: List[Dict], threshold: float = 0.6) -> List[Dict]:
             'count': len(group),
             'items': group
         })
-    return events
+    return sorted(events, key=lambda e: e['count'], reverse=True)

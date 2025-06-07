@@ -14,7 +14,13 @@ class SourceManager:
 
     def add_source(self, url: str, source_type: str):
         """Add single source."""
-        st.session_state['sources'].append({'url': url, 'type': source_type})
+        if {'url': url, 'type': source_type} not in st.session_state['sources']:
+            st.session_state['sources'].append({'url': url, 'type': source_type})
+
+    def remove_source(self, index: int):
+        """Remove source by index."""
+        if 0 <= index < len(st.session_state['sources']):
+            st.session_state['sources'].pop(index)
 
     def load_from_file(self, uploaded_file):
         if uploaded_file is None:
