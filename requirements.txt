@@ -7,3 +7,6 @@ fpdf
 streamlit-folium
 folium
 reportlab
+
+beautifulsoup4
+telethon
