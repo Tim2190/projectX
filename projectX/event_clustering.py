@@ -1,15 +1,19 @@
 from typing import List, Dict
-from sklearn.feature_extraction.text import TfidfVectorizer
+from collections import Counter
 from sklearn.metrics.pairwise import cosine_similarity
+from sentence_transformers import SentenceTransformer
 
 
-def cluster_events(items: List[Dict], threshold: float = 0.6) -> List[Dict]:
-    """Group similar news items into events."""
+model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
+
+
+def cluster_events(items: List[Dict], threshold: float = 0.65) -> List[Dict]:
+    """Group similar news items into events using embeddings."""
     texts = [f"{i.get('title','')} {i.get('description','')}" for i in items]
     if not texts:
         return []
-    vect = TfidfVectorizer().fit_transform(texts)
-    sim = cosine_similarity(vect)
+    embeds = model.encode(texts, show_progress_bar=False)
+    sim = cosine_similarity(embeds)
     used = set()
     events = []
     for idx, item in enumerate(items):
@@ -21,10 +25,13 @@ def cluster_events(items: List[Dict], threshold: float = 0.6) -> List[Dict]:
             if j not in used and sim[idx, j] >= threshold:
                 group.append(items[j])
                 used.add(j)
+        sentiments = [g.get('sentiment', 'neutral') for g in group]
+        ev_sent = Counter(sentiments).most_common(1)[0][0]
         events.append({
-            'title': item.get('title',''),
-            'published': item.get('published',''),
+            'title': item.get('title', ''),
+            'published': item.get('published', ''),
             'count': len(group),
+            'sentiment': ev_sent,
             'items': group
         })
     return sorted(events, key=lambda e: e['count'], reverse=True)

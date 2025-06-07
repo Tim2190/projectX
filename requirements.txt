@@ -13,4 +13,5 @@ telethon
 trafilatura
 openpyxl
 transformers
+sentence-transformers
 torch

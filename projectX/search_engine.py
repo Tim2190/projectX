@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
 from typing import List, Dict, Optional
+from urllib.parse import urlparse
 from scraper_search import ScraperSearch
 from parser_engine import ParserEngine
 from transformers import pipeline
@@ -17,6 +18,9 @@ class SearchEngine:
     def __init__(self, sources: List[Dict]):
         self.sources = sources
         self.parser = ParserEngine()
+        self.custom_domains = {
+            urlparse(s.get('url', '')).netloc for s in sources if s.get('url')
+        }
         try:
             self.sentiment_pipe = pipeline('text-classification',
                                            model='cointegrated/rubert-tiny2-cedr-emotion-detection')
@@ -32,6 +36,11 @@ class SearchEngine:
         except Exception:
             return 'neutral'
 
+    def _apply_sentiment(self, items: List[Dict]):
+        for it in items:
+            text = f"{it.get('title','')} {it.get('description','')}"
+            it['sentiment'] = self._sentiment(text)
+
     def search_scraper(self, query: str, from_date: Optional[str], to_date: Optional[str]) -> List[Dict]:
         cleaned = self._clean_query(query.strip())
         scraper = ScraperSearch()
@@ -41,7 +50,11 @@ class SearchEngine:
         for item in raw_results:
             text = f"{item.get('title','')} {item.get('summary','')}".lower()
             if all(w in text for w in words):
-                item['source'] = 'Scraper'
+                domain = urlparse(item.get('url','')).netloc
+                if domain in self.custom_domains:
+                    item['source'] = domain
+                else:
+                    item['source'] = 'Scraper'
                 filtered.append(item)
         return filtered
 
@@ -59,6 +72,9 @@ class SearchEngine:
         scraper_results = self.search_scraper(query, from_date, to_date)
         source_results = self.search_sources(query)
 
+        self._apply_sentiment(scraper_results)
+        self._apply_sentiment(source_results)
+
         results_by_url = {}
 
         # Add custom sources first
@@ -67,17 +83,14 @@ class SearchEngine:
             if url:
                 results_by_url[url] = item
 
-        # Add scraper results only if url not already seen
+        # Add scraper results only if url not already seen and domain not custom
         for item in scraper_results:
             url = item.get('url')
-            if url and url not in results_by_url:
+            domain = urlparse(url).netloc if url else ''
+            if url and url not in results_by_url and domain not in self.custom_domains:
                 results_by_url[url] = item
 
         merged = list(results_by_url.values())
-
-        for item in merged:
-            text = f"{item.get('title','')} {item.get('description','')}"
-            item['sentiment'] = self._sentiment(text)
 
         def parse_date(item):
             try:
