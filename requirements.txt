@@ -7,3 +7,9 @@ fpdf
 streamlit-folium
 folium
 reportlab
+scikit-learn
+transformers
+sentence-transformers
+torch
+beautifulsoup4
+dateparser
