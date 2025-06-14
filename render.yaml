@@ -6,6 +6,7 @@ services:
     startCommand: python telegram_bot.py
     envVars:
       - key: TELEGRAM_TOKEN
-        value: 7558642889:AAF5BY50zXN5hsIQgVAkFgaQHENQC0ZT1vA
+        sync: false
       - key: WEBHOOK_URL
-        value: https://telegram-bot-name.onrender.com
+        sync: false
+
