@@ -30,12 +30,13 @@ if not webhook_url:
 app = Flask(__name__)
 application = Application.builder().token(token).build()
 
-# --- Обработчик команды /анализ ---
+# --- Обработчик команды /analyze ---
 async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     args = context.args
     if not args:
         await update.message.reply_text(
-            'Использование: /анализ ключевое_слово [дата_с] [дата_по]')
+            'Использование: /analyze ключевое_слово [дата_с] [дата_по]'
+        )
         return
 
     keyword = args[0]
@@ -51,7 +52,7 @@ async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     summary = await loop.run_in_executor(None, run_monitoring, keyword, date_from, date_to)
     await update.message.reply_text(summary)
 
-application.add_handler(CommandHandler('анализ', analyze))
+application.add_handler(CommandHandler('analyze', analyze))
 
 # --- Обработка webhook-запросов от Telegram ---
 @app.route('/webhook', methods=['POST'])
