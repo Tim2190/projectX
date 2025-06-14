@@ -2,8 +2,9 @@ import os
 import asyncio
 from telegram import Update, BotCommand
 from telegram.ext import Application, CommandHandler, ContextTypes
-from projectX.search_engine import SearchEngine
 from aiohttp import web
+
+from projectX.search_engine import SearchEngine
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 PORT = int(os.getenv("PORT", 8080))
@@ -75,6 +76,7 @@ async def handle_trigger(request):
 
 async def main():
     application = Application.builder().token(TOKEN).build()
+
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("subscribe", subscribe))
     application.add_handler(CommandHandler("unsubscribe", unsubscribe))
@@ -87,8 +89,9 @@ async def main():
         BotCommand("list", "Показать текущие подписки"),
     ])
 
-    asyncio.create_task(application.initialize())
-    asyncio.create_task(application.start())
+    await application.initialize()
+    await application.start()
+
     asyncio.create_task(periodic_checker())
 
     app = web.Application()
