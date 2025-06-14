@@ -10,8 +10,15 @@ from projectX.search_engine import SearchEngine
 from projectX.event_clustering import cluster_events
 from projectX.report_utils import summarize_news
 
-
+# --- Основная логика мониторинга ---
 def run_monitoring(keyword: str, date_from: Optional[str], date_to: Optional[str]) -> str:
+    se = SearchEngine()
+    results = se.search(keyword, date_from, date_to)
+    events = cluster_events(results)
+    summary = summarize_news(events)
+    return summary or 'Нет результатов'
+
+# --- Инициализация Flask и Telegram бота ---
 token = os.getenv('TELEGRAM_TOKEN')
 webhook_url = os.getenv('WEBHOOK_URL')
 
@@ -22,19 +29,8 @@ if not webhook_url:
 
 app = Flask(__name__)
 application = Application.builder().token(token).build()
-application.add_handler(CommandHandler('анализ', analyze))
 
-@app.route('/webhook', methods=['POST'])
-def webhook() -> tuple[str, int]:
-    update = Update.de_json(request.get_json(force=True), application.bot)
-    application.process_update(update)
-    return 'ok', 200
-
-
-def main() -> None:
-    application.bot.set_webhook(webhook_url)
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
-
+# --- Обработчик команды /анализ ---
 async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     args = context.args
     if not args:
@@ -52,20 +48,19 @@ async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         date_from = (today - datetime.timedelta(days=7)).isoformat()
 
     loop = asyncio.get_running_loop()
-    summary = await loop.run_in_executor(
-        None, run_monitoring, keyword, date_from, date_to)
+    summary = await loop.run_in_executor(None, run_monitoring, keyword, date_from, date_to)
     await update.message.reply_text(summary)
 
+application.add_handler(CommandHandler('анализ', analyze))
 
-def main() -> None:
-    token = os.getenv('TELEGRAM_TOKEN')
-    if not token:
-        raise RuntimeError('TELEGRAM_TOKEN env variable not set')
+# --- Обработка webhook-запросов от Telegram ---
+@app.route('/webhook', methods=['POST'])
+def webhook() -> tuple[str, int]:
+    update = Update.de_json(request.get_json(force=True), application.bot)
+    application.process_update(update)
+    return 'ok', 200
 
-    app = ApplicationBuilder().token(token).build()
-    app.add_handler(CommandHandler('analyze', analyze))
-    app.run_polling()
-
-
+# --- Запуск Flask + установка webhook ---
 if __name__ == '__main__':
-    main()
+    application.bot.set_webhook(webhook_url)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
