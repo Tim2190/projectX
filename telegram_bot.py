@@ -1,23 +1,25 @@
 import os
 import asyncio
+from aiohttp import web
 from telegram import Update, BotCommand
 from telegram.ext import Application, CommandHandler, ContextTypes
 from projectX.search_engine import SearchEngine
-from aiohttp import web
 
+# Получение переменных окружения
 TOKEN = os.getenv("TELEGRAM_TOKEN")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 PORT = int(os.getenv("PORT", 8080))
 
+# Инициализация
 search_engine = SearchEngine()
 user_keywords_map = {}  # user_id -> set of keywords
 sent_urls_map = {}      # user_id -> set of urls
 
-
+# Команды
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         "Бот запущен. Используйте /subscribe, /unsubscribe и /list."
     )
-
 
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
@@ -36,7 +38,6 @@ async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text("Добавлены: " + ", ".join(added))
 
-
 async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
     if user_id not in user_keywords_map:
@@ -50,7 +51,6 @@ async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         user_keywords_map[user_id].discard(kw)
     await update.message.reply_text("Текущие: " + ", ".join(user_keywords_map[user_id]))
 
-
 async def list_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
     kws = user_keywords_map.get(user_id, set())
@@ -59,7 +59,7 @@ async def list_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     else:
         await update.message.reply_text("Нет активных подписок")
 
-
+# Отправка новостей
 async def send_updates():
     for user_id, keywords in user_keywords_map.items():
         if user_id not in sent_urls_map:
@@ -76,19 +76,22 @@ async def send_updates():
                     except Exception:
                         pass
 
-
+# Регулярная проверка
 async def periodic_checker():
     while True:
         await send_updates()
         await asyncio.sleep(300)
 
+# Обработка Webhook вручную (POST запрос от Telegram)
+async def handle_webhook(request):
+    data = await request.json()
+    update = Update.de_json(data, application.bot)
+    await application.process_update(update)
+    return web.Response(text="ok")
 
-async def handle_trigger(request):
-    await send_updates()
-    return web.Response(text="Manual trigger completed.")
-
-
+# Главная функция
 async def main():
+    global application
     application = Application.builder().token(TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
@@ -105,19 +108,18 @@ async def main():
 
     await application.initialize()
     await application.start()
+    await application.bot.set_webhook(WEBHOOK_URL)
 
     asyncio.create_task(periodic_checker())
 
     app = web.Application()
-    app.add_routes([web.get('/trigger', handle_trigger)])
+    app.add_routes([web.post('/webhook', handle_webhook)])
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", PORT)
     await site.start()
 
-    await application.updater.start_polling()  # fallback polling (если нужен)
     await application.running.wait()
-
 
 if __name__ == "__main__":
     asyncio.run(main())
