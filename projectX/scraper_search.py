@@ -89,7 +89,7 @@ class ScraperSearch:
             # Расширенный поиск: все слова должны быть в тексте
             text = f"{getattr(entry, 'title', '')} {getattr(entry, 'summary', '')}".lower()
             query_words = query.lower().split()
-            if not all(word in text for word in query_words):
+            if not any(word in text for word in query_words):
                 continue
 
             title = getattr(entry, "title", "")
