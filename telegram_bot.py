@@ -76,18 +76,23 @@ async def send_updates():
                     except Exception:
                         pass
 
-# Регулярная проверка
-async def periodic_checker():
-    while True:
-        await send_updates()
-        await asyncio.sleep(300)
+# Ручной запуск обновлений через /trigger
+async def handle_trigger(request):
+    await send_updates()
+    return web.Response(text="Manual trigger completed.")
 
-# Обработка Webhook вручную (POST запрос от Telegram)
+# Обработка Webhook (Telegram POST)
 async def handle_webhook(request):
     data = await request.json()
     update = Update.de_json(data, application.bot)
     await application.process_update(update)
     return web.Response(text="ok")
+
+# Регулярная проверка каждые 5 минут
+async def periodic_checker():
+    while True:
+        await send_updates()
+        await asyncio.sleep(300)
 
 # Главная функция
 async def main():
@@ -110,10 +115,15 @@ async def main():
     await application.start()
     await application.bot.set_webhook(WEBHOOK_URL)
 
+    # Периодический запуск
     asyncio.create_task(periodic_checker())
 
+    # HTTP сервер
     app = web.Application()
-    app.add_routes([web.post('/webhook', handle_webhook)])
+    app.add_routes([
+        web.post('/webhook', handle_webhook),
+        web.get('/trigger', handle_trigger)
+    ])
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", PORT)
