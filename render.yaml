@@ -7,8 +7,5 @@ services:
     envVars:
       - key: TELEGRAM_TOKEN
         sync: false
-      - key: SUBSCRIBER_CHAT_ID
-        sync: false
-      - key: KEYWORDS
-        sync: false
-
+    buildEnvironment:
+      pythonVersion: 3.11
