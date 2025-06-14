@@ -27,12 +27,15 @@ async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user_keywords_map[user_id] = set()
 
     if not context.args:
-        await update.message.reply_text("Укажите ключевые слова через пробел")
+        await update.message.reply_text("Укажите ключевые слова через запятую.")
         return
 
+    text = " ".join(context.args)
+    raw_keywords = [kw.strip() for kw in text.split(",")]
     added = []
-    for kw in context.args:
-        if len(user_keywords_map[user_id]) < 5 or kw in user_keywords_map[user_id]:
+
+    for kw in raw_keywords:
+        if kw and (len(user_keywords_map[user_id]) < 5 or kw in user_keywords_map[user_id]):
             user_keywords_map[user_id].add(kw)
             added.append(kw)
 
