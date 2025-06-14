@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 from typing import List, Dict, Optional
-from scraper_search import ScraperSearch
+from .scraper_search import ScraperSearch
 from transformers import pipeline
 
 
