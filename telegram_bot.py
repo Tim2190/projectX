@@ -1,98 +1,105 @@
 import os
+import asyncio
 from telegram import Update, BotCommand
 from telegram.ext import Application, CommandHandler, ContextTypes
-
 from projectX.search_engine import SearchEngine
+from aiohttp import web
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
-if not TOKEN:
-    raise RuntimeError("TELEGRAM_TOKEN env variable not set")
+PORT = int(os.getenv("PORT", 8080))
 
-# Хранилище подписок и отправленных ссылок
-user_keywords: dict[int, set[str]] = {}
-sent_urls = set()
 search_engine = SearchEngine()
+user_keywords = set()
+sent_urls = set()
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        "Бот запущен. Используйте команды:\n/subscribe — добавить ключевые слова\n/unsubscribe — удалить\n/list — посмотреть подписки"
+        "Бот запущен. Используйте /subscribe, /unsubscribe и /list."
     )
 
 
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    chat_id = update.effective_chat.id
     if not context.args:
         await update.message.reply_text("Укажите ключевые слова через пробел")
         return
-
-    kws = user_keywords.setdefault(chat_id, set())
     for kw in context.args:
-        if len(kws) >= 5 and kw not in kws:
-            await update.message.reply_text("Можно подписаться максимум на 5 ключевых слов")
+        if len(user_keywords) >= 5 and kw not in user_keywords:
+            await update.message.reply_text(
+                "Можно подписаться максимум на 5 ключевых слов"
+            )
             break
-        kws.add(kw.lower())
-    await update.message.reply_text("Текущие подписки: " + ", ".join(kws))
+        user_keywords.add(kw)
+    await update.message.reply_text("Текущие: " + ", ".join(user_keywords))
 
 
 async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    chat_id = update.effective_chat.id
-    kws = user_keywords.setdefault(chat_id, set())
-
     if not context.args:
-        kws.clear()
+        user_keywords.clear()
         await update.message.reply_text("Все подписки удалены")
         return
-
     for kw in context.args:
-        kws.discard(kw.lower())
-    await update.message.reply_text("Текущие подписки: " + ", ".join(kws))
+        user_keywords.discard(kw)
+    await update.message.reply_text("Текущие: " + ", ".join(user_keywords))
 
 
 async def list_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    chat_id = update.effective_chat.id
-    kws = user_keywords.get(chat_id, set())
-    if kws:
-        await update.message.reply_text("Ваши подписки: " + ", ".join(kws))
+    if user_keywords:
+        await update.message.reply_text("Подписки: " + ", ".join(user_keywords))
     else:
         await update.message.reply_text("Нет активных подписок")
 
 
-async def send_updates(context: ContextTypes.DEFAULT_TYPE) -> None:
-    for chat_id, kws in user_keywords.items():
-        for kw in kws:
-            results = search_engine.search(kw)
-            for item in results:
-                url = item.get("url")
-                if url and url not in sent_urls:
-                    sent_urls.add(url)
-                    title = item.get("title", url)
-                    await context.bot.send_message(chat_id=chat_id, text=f"{title}\n{url}")
+async def send_updates():
+    for kw in user_keywords:
+        results = search_engine.search(kw)
+        for item in results:
+            url = item.get("url")
+            if url and url not in sent_urls:
+                sent_urls.add(url)
+                title = item.get("title", url)
+                for user_id in search_engine.subscribers:
+                    await search_engine.bot.send_message(chat_id=user_id, text=f"{title}\n{url}")
 
 
-async def post_init(app: Application) -> None:
-    commands = [
-        BotCommand("start", "Начать работу с ботом"),
-        BotCommand("subscribe", "Подписаться на ключевые слова (до 5)"),
-        BotCommand("unsubscribe", "Отписаться от одного или всех ключевых слов"),
-        BotCommand("list", "Показать текущие подписки"),
-    ]
-    await app.bot.set_my_commands(commands)
+async def periodic_checker():
+    while True:
+        await send_updates()
+        await asyncio.sleep(300)  # каждые 5 минут
 
 
-def main() -> None:
-    application = Application.builder().token(TOKEN).post_init(post_init).build()
+async def handle_trigger(request):
+    await send_updates()
+    return web.Response(text="Manual trigger completed.")
 
+
+async def main():
+    application = Application.builder().token(TOKEN).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("subscribe", subscribe))
     application.add_handler(CommandHandler("unsubscribe", unsubscribe))
     application.add_handler(CommandHandler("list", list_cmd))
 
-    # Каждые 5 минут запускаем проверку новых новостей
-    application.job_queue.run_repeating(send_updates, interval=300, first=5)
+    await application.bot.set_my_commands([
+        BotCommand("start", "Начать работу с ботом"),
+        BotCommand("subscribe", "Подписаться на ключевые слова (до 5)"),
+        BotCommand("unsubscribe", "Отписаться от одного или всех ключевых слов"),
+        BotCommand("list", "Показать текущие подписки"),
+    ])
 
-    application.run_polling()
+    asyncio.create_task(application.initialize())
+    asyncio.create_task(application.start())
+    asyncio.create_task(periodic_checker())
+
+    app = web.Application()
+    app.add_routes([web.get('/trigger', handle_trigger)])
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", PORT)
+    await site.start()
+
+    await asyncio.Event().wait()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
