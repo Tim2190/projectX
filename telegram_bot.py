@@ -62,6 +62,9 @@ def webhook() -> tuple[str, int]:
     return 'ok', 200
 
 # --- Запуск Flask + установка webhook ---
-if __name__ == '__main__':
-    application.bot.set_webhook(webhook_url)
+async def start_bot():
+    await application.bot.set_webhook(webhook_url)
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
+if __name__ == '__main__':
+    asyncio.run(start_bot())
