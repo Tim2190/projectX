@@ -47,7 +47,7 @@ def main() -> None:
         raise RuntimeError('TELEGRAM_TOKEN env variable not set')
 
     app = ApplicationBuilder().token(token).build()
-    app.add_handler(CommandHandler('анализ', analyze))
+    app.add_handler(CommandHandler('analyze', analyze))
     app.run_polling()
 
 
