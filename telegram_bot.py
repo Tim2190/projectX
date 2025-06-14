@@ -62,19 +62,28 @@ async def list_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 # Отправка новостей
 async def send_updates():
     for user_id, keywords in user_keywords_map.items():
+        print(f"[BOT] Пользователь: {user_id}")
+        print(f"[BOT] Ключевые слова: {keywords}")
+
         if user_id not in sent_urls_map:
             sent_urls_map[user_id] = set()
+
         for kw in keywords:
+            print(f"[SEARCH] Ищу по ключу: {kw}")
             results = search_engine.search(kw)
+
+            print(f"[SEARCH] Найдено новостей: {len(results)}")
+
             for item in results:
                 url = item.get("url")
                 if url and url not in sent_urls_map[user_id]:
                     sent_urls_map[user_id].add(url)
                     title = item.get("title", url)
                     try:
-                        await search_engine.bot.send_message(chat_id=user_id, text=f"{title}\n{url}")
-                    except Exception:
-                        pass
+                        print(f"[SEND] Отправка: {title}")
+                        await application.bot.send_message(chat_id=user_id, text=f"{title}\n{url}")
+                    except Exception as e:
+                        print(f"[ERROR] Не удалось отправить сообщение: {e}")
 
 # Ручной запуск обновлений через /trigger
 async def handle_trigger(request):
