@@ -3,12 +3,12 @@ from collections import Counter, defaultdict
 from sklearn.cluster import DBSCAN
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
-from sentence_transformers import SentenceTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from email.utils import parsedate_to_datetime
 from datetime import datetime
 import dateparser
 
-model = SentenceTransformer('cointegrated/rubert-tiny2')
+vectorizer = TfidfVectorizer(max_features=1000)
 
 
 def _parse_date(text: str) -> datetime:
@@ -50,7 +50,7 @@ def cluster_events(items: List[Dict], eps: float = 0.25, min_samples: int = 2, p
     texts = [f"{i.get('title','')} {i.get('summary','')}" for i in items]
     if not texts:
         return []
-    embeds = model.encode(texts, show_progress_bar=False, normalize_embeddings=True)
+    embeds = vectorizer.fit_transform(texts).toarray()
     clustering = DBSCAN(eps=eps, min_samples=min_samples, metric='cosine')
     labels = clustering.fit_predict(embeds)
 

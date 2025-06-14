@@ -1,39 +1,18 @@
 import re
 from datetime import datetime
 from typing import List, Dict, Optional
-from .scraper_search import ScraperSearch
-from transformers import pipeline
 
-
-
-class SearchEngine:
-    """Search news using only Google News RSS scraper."""
-
+        """Initialize search engine with lightweight sentiment detection."""
+        self.sentiment_pipe = None
     @staticmethod
-    def _clean_query(query: str) -> str:
-        words = re.findall(r"[\w\-]+", query, flags=re.UNICODE)
-        return " ".join(words)
-
-    def __init__(self):
-        try:
-            self.sentiment_pipe = pipeline(
-                'sentiment-analysis',
-                model='blanchefort/rubert-base-cased-sentiment'
-            )
-        except Exception:
-            self.sentiment_pipe = None
-        self.negative_keywords = [
-            'скандал', 'коррупция', 'отставка', 'задержан'
-        ]
-        self.positive_keywords = [
-            'поздравил', 'открыл', 'премия', 'успех',
-            'открыли', 'установили', 'провели'
-        ]
-
-    @staticmethod
-    def _preprocess_text(text: str) -> str:
-        clean = re.sub(r'["«»]', ' ', text)
-        clean = re.sub(r'\s+', ' ', clean)
+        text_low = self._preprocess_text(text).lower()
+        pos = sum(text_low.count(k) for k in self.positive_keywords)
+        neg = sum(text_low.count(k) for k in self.negative_keywords)
+        if pos > neg:
+            return "positive"
+        if neg > pos:
+            return "negative"
+        return "neutral"
         return clean.strip()
 
     def _sentiment(self, text: str) -> str:
