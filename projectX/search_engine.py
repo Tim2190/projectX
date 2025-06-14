@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
 from typing import List, Dict, Optional
+from projectX.scraper_search import ScraperSearch  # ← подключаем парсер
 
 # Если нужны ключевые слова для тональности
 POSITIVE = ["good", "success", "growth", "positive", "improved"]
@@ -59,10 +60,31 @@ class SearchEngine:
             text = f"{it.get('title','')} {it.get('summary','')}"
             it['sentiment'] = self._sentiment(text)
 
-    def search(self, query: str, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict]:
-        """Метод-заглушка. Источники отключены, возвращает пустой список."""
-        return []
-
-    @staticmethod
-    def _clean_query(text: str) -> str:
+    def _clean_query(self, text: str) -> str:
         return re.sub(r"[^\w\s]", "", text).strip()
+
+    def search(self, query: str, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict]:
+        """Восстановленный поиск по RSS + тональность."""
+        cleaned = self._clean_query(query.strip())
+        scraper = ScraperSearch()
+        raw_results = scraper.search(cleaned, from_date, to_date)
+        words = query.lower().split()
+
+        filtered = []
+        for item in raw_results:
+            text = f"{item.get('title','')} {item.get('summary','')}".lower()
+            if all(w in text for w in words):
+                if not item.get('source'):
+                    item['source'] = 'Scraper'
+                filtered.append(item)
+
+        self._apply_sentiment(filtered)
+
+        # убрать дубликаты по URL
+        results_by_url = {}
+        for item in filtered:
+            url = item.get('url')
+            if url and url not in results_by_url:
+                results_by_url[url] = item
+
+        return list(results_by_url.values())
