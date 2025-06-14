@@ -59,9 +59,7 @@ class SearchEngine:
             it['sentiment'] = self._sentiment(text)
     
     def search(self, query: str, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict]:
-    """
-    Метод-заглушка. Источники отключены, возвращает пустой список.
-    """
+    """Метод-заглушка. Источники отключены, возвращает пустой список."""
     return []
 
         def parse_date(item):
