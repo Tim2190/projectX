@@ -1,10 +1,26 @@
 import re
 from datetime import datetime
 from typing import List, Dict, Optional
+from projectX.scraper import ScraperSearch  # не забудь импорт
+# Если нужны ключевые слова для тональности
+POSITIVE = ["good", "success", "growth", "positive", "improved"]
+NEGATIVE = ["bad", "failure", "decline", "negative", "worse"]
 
-        """Initialize search engine with lightweight sentiment detection."""
+
+class SearchEngine:
+    """Lightweight search engine with keyword-based sentiment detection."""
+
+    def __init__(self):
         self.sentiment_pipe = None
+        self.positive_keywords = POSITIVE
+        self.negative_keywords = NEGATIVE
+
     @staticmethod
+    def _preprocess_text(text: str) -> str:
+        clean = re.sub(r"\s+", " ", text)
+        return clean.strip()
+
+    def detect_sentiment(self, text: str) -> str:
         text_low = self._preprocess_text(text).lower()
         pos = sum(text_low.count(k) for k in self.positive_keywords)
         neg = sum(text_low.count(k) for k in self.negative_keywords)
@@ -13,18 +29,16 @@ from typing import List, Dict, Optional
         if neg > pos:
             return "negative"
         return "neutral"
-        return clean.strip()
 
     def _sentiment(self, text: str) -> str:
         if not self.sentiment_pipe:
-            return 'neutral'
+            return self.detect_sentiment(text)
         try:
             text = self._preprocess_text(text)
             res = self.sentiment_pipe(text[:512])[0]
             label = res['label'].lower()
             score = res['score']
             text_low = text.lower()
-            # mixed context handling
             if any(n in text_low for n in self.negative_keywords) and any(p in text_low for p in self.positive_keywords):
                 return 'neutral'
             if label == 'neutral' and score < 0.6:
@@ -59,18 +73,14 @@ from typing import List, Dict, Optional
                 filtered.append(item)
         return filtered
 
-
     def search(self, query: str, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict]:
         scraper_results = self.search_scraper(query, from_date, to_date)
-
         self._apply_sentiment(scraper_results)
-
         results_by_url = {}
         for item in scraper_results:
             url = item.get('url')
             if url and url not in results_by_url:
                 results_by_url[url] = item
-
         merged = list(results_by_url.values())
 
         def parse_date(item):
@@ -80,3 +90,7 @@ from typing import List, Dict, Optional
                 return datetime.min
 
         return sorted(merged, key=parse_date, reverse=True)
+
+    @staticmethod
+    def _clean_query(text: str) -> str:
+        return re.sub(r"[^\w\s]", "", text).strip()
