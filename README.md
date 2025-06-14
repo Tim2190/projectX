@@ -31,8 +31,16 @@ streamlit run projectX/app.py
 
 ## Telegram бот
 
-В репозитории есть простой бот, который запускает поиск и аналитику по команде `/анализ`. Для его запуска требуется токен Telegram в переменной окружения `TELEGRAM_TOKEN`.
+В репозитории есть бот, работающий через Webhook. Он запускает поиск и аналитику по команде `/анализ`.
 
+1. Установите зависимости:
+```bash
+pip install -r requirements.txt
+```
+
+2. Задайте переменные окружения `TELEGRAM_TOKEN` и `WEBHOOK_URL` (полный адрес вида `https://yourservice.com/webhook`). При необходимости задайте `PORT`.
+
+3. Запустите:
 ```bash
 python telegram_bot.py
 ```

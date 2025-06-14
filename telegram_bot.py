@@ -2,8 +2,9 @@ import os
 import datetime
 import asyncio
 from typing import Optional
+from flask import Flask, request
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 from projectX.search_engine import SearchEngine
 from projectX.event_clustering import cluster_events
@@ -11,13 +12,28 @@ from projectX.report_utils import summarize_news
 
 
 def run_monitoring(keyword: str, date_from: Optional[str], date_to: Optional[str]) -> str:
-    from projectX.search_engine import SearchEngine  # импорт только при вызове
-    se = SearchEngine()
-    results = se.search(keyword, date_from, date_to)
-    events = cluster_events(results)
-    summary = summarize_news(events)
-    return summary or 'Нет результатов'
+token = os.getenv('TELEGRAM_TOKEN')
+webhook_url = os.getenv('WEBHOOK_URL')
 
+if not token:
+    raise RuntimeError('TELEGRAM_TOKEN env variable not set')
+if not webhook_url:
+    raise RuntimeError('WEBHOOK_URL env variable not set')
+
+app = Flask(__name__)
+application = Application.builder().token(token).build()
+application.add_handler(CommandHandler('анализ', analyze))
+
+@app.route('/webhook', methods=['POST'])
+def webhook() -> tuple[str, int]:
+    update = Update.de_json(request.get_json(force=True), application.bot)
+    application.process_update(update)
+    return 'ok', 200
+
+
+def main() -> None:
+    application.bot.set_webhook(webhook_url)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
 
 async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     args = context.args

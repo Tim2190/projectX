@@ -10,4 +10,5 @@ reportlab
 scikit-learn
 beautifulsoup4
 dateparser
-python-telegram-bot>=20
+python-telegram-bot==20.3
+Flask
