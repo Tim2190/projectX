@@ -1,7 +1,6 @@
 import re
 from datetime import datetime
 from typing import List, Dict, Optional
-from projectX.scraper import ScraperSearch  # не забудь импорт
 # Если нужны ключевые слова для тональности
 POSITIVE = ["good", "success", "growth", "positive", "improved"]
 NEGATIVE = ["bad", "failure", "decline", "negative", "worse"]
@@ -58,30 +57,12 @@ class SearchEngine:
         for it in items:
             text = f"{it.get('title','')} {it.get('summary','')}"
             it['sentiment'] = self._sentiment(text)
-
-    def search_scraper(self, query: str, from_date: Optional[str], to_date: Optional[str]) -> List[Dict]:
-        cleaned = self._clean_query(query.strip())
-        scraper = ScraperSearch()
-        raw_results = scraper.search(cleaned, from_date, to_date)
-        words = query.lower().split()
-        filtered = []
-        for item in raw_results:
-            text = f"{item.get('title','')} {item.get('summary','')}".lower()
-            if all(w in text for w in words):
-                if not item.get('source'):
-                    item['source'] = 'Scraper'
-                filtered.append(item)
-        return filtered
-
+    
     def search(self, query: str, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict]:
-        scraper_results = self.search_scraper(query, from_date, to_date)
-        self._apply_sentiment(scraper_results)
-        results_by_url = {}
-        for item in scraper_results:
-            url = item.get('url')
-            if url and url not in results_by_url:
-                results_by_url[url] = item
-        merged = list(results_by_url.values())
+    """
+    Метод-заглушка. Источники отключены, возвращает пустой список.
+    """
+    return []
 
         def parse_date(item):
             try:
