@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
 from typing import List, Dict, Optional
+
 # Если нужны ключевые слова для тональности
 POSITIVE = ["good", "success", "growth", "positive", "improved"]
 NEGATIVE = ["bad", "failure", "decline", "negative", "worse"]
@@ -57,18 +58,10 @@ class SearchEngine:
         for it in items:
             text = f"{it.get('title','')} {it.get('summary','')}"
             it['sentiment'] = self._sentiment(text)
-    
+
     def search(self, query: str, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict]:
-    """Метод-заглушка. Источники отключены, возвращает пустой список."""
-    return []
-
-        def parse_date(item):
-            try:
-                return datetime.fromisoformat(item['published'][:19])
-            except Exception:
-                return datetime.min
-
-        return sorted(merged, key=parse_date, reverse=True)
+        """Метод-заглушка. Источники отключены, возвращает пустой список."""
+        return []
 
     @staticmethod
     def _clean_query(text: str) -> str:
