@@ -11,6 +11,7 @@ from projectX.report_utils import summarize_news
 
 
 def run_monitoring(keyword: str, date_from: Optional[str], date_to: Optional[str]) -> str:
+    from projectX.search_engine import SearchEngine  # импорт только при вызове
     se = SearchEngine()
     results = se.search(keyword, date_from, date_to)
     events = cluster_events(results)
