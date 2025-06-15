@@ -2,7 +2,7 @@ import os
 import asyncio
 from aiohttp import web
 from telegram import Update, BotCommand
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from projectX.search_engine import SearchEngine
 
 # Получение переменных окружения
@@ -12,8 +12,10 @@ PORT = int(os.getenv("PORT", 8080))
 
 # Инициализация
 search_engine = SearchEngine()
-user_keywords_map = {}  # user_id -> set of keywords
-sent_urls_map = {}      # user_id -> set of urls
+user_keywords_map = {}       # user_id -> set of keywords
+sent_urls_map = {}           # user_id -> set of urls
+waiting_for_keywords = set()  # user_ids ожидающие ввода ключевых слов после /subscribe
+waiting_for_unsubscribe = {}  # user_id -> set of keywords, если ожидается удаление
 
 # Команды
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -23,36 +25,49 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
-    if user_id not in user_keywords_map:
-        user_keywords_map[user_id] = set()
+    waiting_for_keywords.add(user_id)
+    await update.message.reply_text("Введите ключевые слова через запятую.")
 
-    if not context.args:
-        await update.message.reply_text("Укажите ключевые слова через запятую.")
-        return
-
-    text = " ".join(context.args)
-    raw_keywords = [kw.strip() for kw in text.split(",")]
-    added = []
-
-    for kw in raw_keywords:
-        if kw and (len(user_keywords_map[user_id]) < 5 or kw in user_keywords_map[user_id]):
-            user_keywords_map[user_id].add(kw)
-            added.append(kw)
-
-    await update.message.reply_text("Добавлены: " + ", ".join(added))
+async def handle_keywords_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.effective_user.id
+    if user_id in waiting_for_keywords:
+        keywords = [kw.strip() for kw in update.message.text.split(",") if kw.strip()]
+        if user_id not in user_keywords_map:
+            user_keywords_map[user_id] = set()
+        added = []
+        for kw in keywords:
+            if kw and (len(user_keywords_map[user_id]) < 5 or kw in user_keywords_map[user_id]):
+                user_keywords_map[user_id].add(kw)
+                added.append(kw)
+        waiting_for_keywords.discard(user_id)
+        await update.message.reply_text("Добавлены: " + ", ".join(added))
 
 async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
-    if user_id not in user_keywords_map:
+    kws = user_keywords_map.get(user_id)
+    if not kws:
         return await update.message.reply_text("Нет активных подписок")
 
-    if not context.args:
-        user_keywords_map[user_id].clear()
-        return await update.message.reply_text("Все подписки удалены")
+    waiting_for_unsubscribe[user_id] = kws.copy()
+    message = "У вас следующие подписки:\n" + "\n".join(f"- {kw}" for kw in kws)
+    message += "\n\nНапишите слово для удаления или 'все' для полной отписки."
+    await update.message.reply_text(message)
 
-    for kw in context.args:
-        user_keywords_map[user_id].discard(kw)
-    await update.message.reply_text("Текущие: " + ", ".join(user_keywords_map[user_id]))
+async def handle_unsubscribe_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.effective_user.id
+    if user_id in waiting_for_unsubscribe:
+        kws = user_keywords_map.get(user_id, set())
+        msg = update.message.text.strip()
+        if msg.lower() == "все":
+            kws.clear()
+            waiting_for_unsubscribe.pop(user_id, None)
+            return await update.message.reply_text("Все подписки удалены")
+        elif msg in kws:
+            kws.remove(msg)
+            waiting_for_unsubscribe.pop(user_id, None)
+            return await update.message.reply_text(f"Удалено: {msg}\nОсталось: " + ", ".join(kws))
+        else:
+            return await update.message.reply_text("Такого слова нет в списке подписок. Попробуйте снова.")
 
 async def list_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
@@ -61,6 +76,14 @@ async def list_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("Подписки: " + ", ".join(kws))
     else:
         await update.message.reply_text("Нет активных подписок")
+
+# Обработка всех текстовых сообщений
+async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.effective_user.id
+    if user_id in waiting_for_keywords:
+        await handle_keywords_input(update, context)
+    elif user_id in waiting_for_unsubscribe:
+        await handle_unsubscribe_input(update, context)
 
 # Отправка новостей
 async def send_updates():
@@ -115,6 +138,7 @@ async def main():
     application.add_handler(CommandHandler("subscribe", subscribe))
     application.add_handler(CommandHandler("unsubscribe", unsubscribe))
     application.add_handler(CommandHandler("list", list_cmd))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
 
     await application.bot.set_my_commands([
         BotCommand("start", "Начать работу с ботом"),
