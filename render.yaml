@@ -8,5 +8,6 @@ services:
       - key: TELEGRAM_TOKEN
         sync: false
       - key: WEBHOOK_URL
-        sync: false
-
+        value: https://projectx-uxr4.onrender.com/webhook 
+    buildEnvironment:
+      pythonVersion: 3.11

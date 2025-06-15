@@ -1,14 +1,7 @@
-streamlit
-pandas
 feedparser
 requests
-plotly
-fpdf
-streamlit-folium
-folium
-reportlab
-scikit-learn
 beautifulsoup4
 dateparser
-python-telegram-bot==20.3
-flask
+python-telegram-bot[job-queue]==20.3
+aiohttp
+
